@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#0F172A">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Student &amp; Staff Directory USING SQLLITE"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Label -->
+        <TextView
+            android:id="@+id/resultLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#94A3B8"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:textAllCaps="true"/>
+
+        <!-- Big Output -->
+        <TextView
+            android:id="@+id/bigOutputText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="180dp"
+            android:text="Select a profile below"
+            android:textColor="#F1F5F9"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Card for Spinners -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#000000">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:background="#0F172A">
+
+                <!-- Role Spinner -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Choose Category"
+                    android:textColor="#2196F3"
+                    android:textStyle="bold"
+                    android:textAllCaps="true"/>
+
+                <Spinner
+                    android:id="@+id/roleSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"/>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#333333"
+                    android:layout_marginVertical="20dp"/>
+
+                <!-- Result Spinner -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select Profile"
+                    android:textColor="#2196F3"
+                    android:textStyle="bold"
+                    android:textAllCaps="true"/>
+
+                <Spinner
+                    android:id="@+id/resultSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>
+package com.example.calc1;
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+    Spinner roleSpinner, resultSpinner;
+    TextView bigOutputText;
+    DatabaseHelper dbHelper;
+    String[] roles = {"Student", "Staff"};
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        roleSpinner = findViewById(R.id.roleSpinner);
+        resultSpinner = findViewById(R.id.resultSpinner);
+        bigOutputText = findViewById(R.id.bigOutputText);
+
+        dbHelper = new DatabaseHelper(this);
+
+        ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, roles);
+        roleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        roleSpinner.setAdapter(roleAdapter);
+        roleSpinner.setSelection(0);
+
+        roleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                List<String> list = (position == 0) ? dbHelper.getAllStudents() : dbHelper.getAllStaff();
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(MainActivity.this,
+                        android.R.layout.simple_spinner_item, list);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                resultSpinner.setAdapter(adapter);
+
+                if (!list.isEmpty()) updateOutput(list.get(0), position);
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        resultSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (resultSpinner.getSelectedItem() == null) return;
+                updateOutput(resultSpinner.getSelectedItem().toString(),
+                        roleSpinner.getSelectedItemPosition());
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void updateOutput(String selected, int rolePosition) {
+        List<String> results = (rolePosition == 0)
+                ? dbHelper.getStaffByStudent(selected)
+                : dbHelper.getStudentsByStaff(selected);
+
+        if (results.isEmpty()) {
+            bigOutputText.setText("No entries found");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (String name : results) sb.append("• ").append(name).append("\n");
+        bigOutputText.setText(sb.toString().trim());
+    }
+}
+package com.example.calc1;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DatabaseHelper extends SQLiteOpenHelper {
+
+    private static final String DATABASE_NAME = "directory.db";
+    private static final int DATABASE_VERSION = 1;
+
+    public DatabaseHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        // Tables
+        db.execSQL("CREATE TABLE staff (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+        db.execSQL("CREATE TABLE student (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+        db.execSQL("CREATE TABLE mapping (student_id INTEGER, staff_id INTEGER)");
+
+        // Staff
+        db.execSQL("INSERT INTO staff (name) VALUES ('Dr. Rajesh')");
+        db.execSQL("INSERT INTO staff (name) VALUES ('Dr. Yogarajan')");
+        db.execSQL("INSERT INTO staff (name) VALUES ('Dr. Arunagiri Balan')");
+
+        // Students
+        db.execSQL("INSERT INTO student (name) VALUES ('Mathesh')");
+        db.execSQL("INSERT INTO student (name) VALUES ('Rajamayil Pandian')");
+        db.execSQL("INSERT INTO student (name) VALUES ('Sooraj')");
+        db.execSQL("INSERT INTO student (name) VALUES ('Naveen')");
+        db.execSQL("INSERT INTO student (name) VALUES ('Yokeshwar')");
+        db.execSQL("INSERT INTO student (name) VALUES ('Logeshwaran')");
+
+        // Mapping
+        db.execSQL("INSERT INTO mapping VALUES (1,1)");
+        db.execSQL("INSERT INTO mapping VALUES (2,1)");
+        db.execSQL("INSERT INTO mapping VALUES (3,2)");
+        db.execSQL("INSERT INTO mapping VALUES (4,2)");
+        db.execSQL("INSERT INTO mapping VALUES (5,3)");
+        db.execSQL("INSERT INTO mapping VALUES (6,3)");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS mapping");
+        db.execSQL("DROP TABLE IF EXISTS student");
+        db.execSQL("DROP TABLE IF EXISTS staff");
+        onCreate(db);
+    }
+
+    public List<String> getAllStaff() {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT name FROM staff", null);
+        while (cursor.moveToNext()) list.add(cursor.getString(0));
+        cursor.close();
+        return list;
+    }
+
+    public List<String> getAllStudents() {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT name FROM student", null);
+        while (cursor.moveToNext()) list.add(cursor.getString(0));
+        cursor.close();
+        return list;
+    }
+
+    public List<String> getStudentsByStaff(String staffName) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT student.name FROM student " +
+                        "JOIN mapping ON student.id = mapping.student_id " +
+                        "JOIN staff ON staff.id = mapping.staff_id " +
+                        "WHERE staff.name = ?",
+                new String[]{staffName});
+        while (cursor.moveToNext()) list.add(cursor.getString(0));
+        cursor.close();
+        return list;
+    }
+
+    public List<String> getStaffByStudent(String studentName) {
+        List<String> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT staff.name FROM staff " +
+                        "JOIN mapping ON staff.id = mapping.staff_id " +
+                        "JOIN student ON student.id = mapping.student_id " +
+                        "WHERE student.name = ?",
+                new String[]{studentName});
+        while (cursor.moveToNext()) list.add(cursor.getString(0));
+        cursor.close();
+        return list;
+    }
+}

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#0F172A">
+
+    <TextView
+        android:text="Q1: Android is developed by Google?"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="40dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF" />
+
+    <Button
+        android:id="@+id/btnTrue1"
+        android:text="True"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="6dp"/>
+
+    <Button
+        android:id="@+id/btnFalse1"
+        android:text="False"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#F44336"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="6dp"/>
+</LinearLayout>
+
+/////////////////////////////////
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#0F172A">
+
+    <TextView
+        android:id="@+id/tvQuestion2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Q2: Java is not used in Android?"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="40dp"
+        android:textColor="#FFFFFF" />
+
+    <Button
+        android:id="@+id/btnTrue2"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="True"
+        android:layout_marginBottom="20dp"
+        android:backgroundTint="#FF9800"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="6dp"/>
+
+    <Button
+        android:id="@+id/btnFalse2"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="False"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="6dp"/>
+</LinearLayout>
+///////////////////////////////////////
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#0F172A">
+
+    <TextView
+        android:id="@+id/tvResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Quiz Over!"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="30dp"
+        android:textColor="#FFFFFF" />
+
+    <Button
+        android:id="@+id/btnRestart"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="Restart Quiz"
+        android:backgroundTint="#2196F3"
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="6dp"/>
+</LinearLayout>
+//////////////////////////////////////
+package com.example.calc1;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    int score = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main); // Q1 layout
+
+        Button btnTrue = findViewById(R.id.btnTrue1);
+        Button btnFalse = findViewById(R.id.btnFalse1);
+
+        // Correct Answer = TRUE
+        btnTrue.setOnClickListener(v -> {
+            score = 1;
+            goToQuestion2();
+        });
+
+        btnFalse.setOnClickListener(v -> {
+            score = 0;
+            goToQuestion2();
+        });
+    }
+
+    private void goToQuestion2() {
+        Intent intent = new Intent(MainActivity.this, Question2Activity.class);
+        intent.putExtra("CURRENT_SCORE", score);
+        startActivity(intent);
+        finish(); // Prevent going back
+    }
+}
+////////////////////////////////////
+package com.example.calc1;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class Question2Activity extends AppCompatActivity {
+
+    int runningScore;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main1); // Q2 layout
+
+        // Get score from Q1
+        runningScore = getIntent().getIntExtra("CURRENT_SCORE", 0);
+
+        Button btnTrue = findViewById(R.id.btnTrue2);
+        Button btnFalse = findViewById(R.id.btnFalse2);
+
+        // Correct Answer = FALSE
+        btnTrue.setOnClickListener(v -> goToResult(0));  // Wrong
+        btnFalse.setOnClickListener(v -> goToResult(1)); // Correct
+    }
+
+    private void goToResult(int points) {
+        runningScore += points;
+
+        Intent intent = new Intent(Question2Activity.this, ResultActivity.class);
+        intent.putExtra("FINAL_SCORE", runningScore);
+        startActivity(intent);
+        finish();
+    }
+}
+/////////////////////////////////////////
+package com.example.calc1;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class ResultActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main2); // Result layout
+
+        int finalScore = getIntent().getIntExtra("FINAL_SCORE", 0);
+
+        TextView tvResult = findViewById(R.id.tvResult);
+        tvResult.setText("Quiz Over! Total Score: " + finalScore + " / 2");
+
+        Button btnRestart = findViewById(R.id.btnRestart);
+        btnRestart.setOnClickListener(v -> {
+            Intent intent = new Intent(ResultActivity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
+    }
+}
+//////////////////////////////////////////////////////////////
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.calc1">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Calc1">
+
+        <activity android:name=".ResultActivity"/>
+        <activity android:name=".Question2Activity"/>
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
