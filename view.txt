@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com"
+    android:id="@+id/main_container" 
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Press a button"
+        android:textSize="20sp"
+        android:layout_marginBottom="20dp" />
+
+    <Button
+        android:id="@+id/btn_one"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Button 1" />
+
+    <Button
+        android:id="@+id/btn_two"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Button 2" />
+
+</LinearLayout>
+package com.example.myjavaapp; // Ensure this matches your project package name
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private TextView statusText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // 1. Initialize the Views
+        statusText = findViewById(R.id.status_text);
+        Button btnOne = findViewById(R.id.btn_one);
+        Button btnTwo = findViewById(R.id.btn_two);
+
+        // 2. Set the click listener to 'this' class
+        btnOne.setOnClickListener(this);
+        btnTwo.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
+        // 3. Determine which button was clicked by its ID
+        int id = v.getId();
+
+        if (id == R.id.btn_one) {
+            statusText.setText("You clicked the First Button!");
+            Toast.makeText(this, "Action 1", Toast.LENGTH_SHORT).show();
+        } 
+        else if (id == R.id.btn_two) {
+            statusText.setText("You clicked the Second Button!");
+            Toast.makeText(this, "Action 2", Toast.LENGTH_SHORT).show();
+        }
+    }
+}

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Question: Which language is used for Android?"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="30dp" />
+
+    <Button
+        android:id="@+id/btn_java"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Java" />
+
+    <Button
+        android:id="@+id/btn_python"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Python" />
+
+</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/result_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Result Screen"
+        android:textSize="24sp" />
+
+</LinearLayout>
+package com.example.quizapp;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        Button btnJava = findViewById(R.id.btn_java);
+        Button btnPython = findViewById(R.id.btn_python);
+
+        // Explicit Intent to move to ResultActivity with data
+        btnJava.setOnClickListener(v -> sendResult("Correct! Java is native."));
+        btnPython.setOnClickListener(v -> sendResult("Wrong! Python is not native."));
+    }
+
+    private void sendResult(String message) {
+        Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+        intent.putExtra("USER_SCORE", message); // Key-Value pair
+        startActivity(intent);
+    }
+}
+package com.example.quizapp;
+
+import android.os.Bundle;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class ResultActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_result);
+
+        TextView resultView = findViewById(R.id.result_text);
+
+        // Get the Intent that started this activity and extract the string
+        String message = getIntent().getStringExtra("USER_SCORE");
+        
+        if (message != null) {
+            resultView.setText(message);
+        }
+    }
+}
+<manifest xmlns:android="http://schemas.android.com">
+    <application
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+        
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".ResultActivity" />
+
+    </application>
+</manifest>
