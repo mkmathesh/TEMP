@@ -1,0 +1,178 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import svm
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score
+
+# 1. LOAD AND PREPROCESS DATA
+df = pd.read_csv(r'C:\Users\login01\Documents\MK\s1.csv').dropna()
+le = LabelEncoder()
+df_processed = df.copy()
+df_processed.columns = df_processed.columns.str.strip().str.replace(' ', '_')
+
+for col in df_processed.columns:
+    if df_processed[col].dtype == 'object':
+        df_processed[col] = le.fit_transform(df_processed[col])
+
+X = df_processed.drop('LUNG_CANCER', axis=1)
+y = df_processed['LUNG_CANCER']
+
+# 2. FEATURE SCALING
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 3. SPLIT DATA
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=109)
+
+# Picking first two features for 2D visualization: GENDER (0) and AGE (1)
+feat1, feat2 = 0, 1
+X_train_2d = X_train[:, [feat1, feat2]]
+X_test_2d = X_test[:, [feat1, feat2]]
+
+# 4. TRAIN MODELS
+# Linear SVM
+clf_linear = svm.SVC(kernel='linear', C=1.0).fit(X_train_2d, y_train)
+
+# Non-Linear SVM (RBF)
+clf_rbf = svm.SVC(kernel='rbf', C=1.0, gamma=0.7).fit(X_train_2d, y_train)
+
+# 5. VISUALIZATION FUNCTION
+def plot_svm_comparison(clf, title, ax):
+    h = .02  # mesh step size
+    x_min, x_max = X_train_2d[:, 0].min() - 1, X_train_2d[:, 0].max() + 1
+    y_min, y_max = X_train_2d[:, 1].min() - 1, X_train_2d[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+
+    # Plot Decision Regions
+    ax.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.8)
+
+    # Plot Scatter Points
+    scat = ax.scatter(X_train_2d[:, 0], X_train_2d[:, 1], c=y_train, edgecolors='k', cmap=plt.cm.coolwarm)
+    
+    ax.set_title(title, size=14)
+    ax.set_xlabel(X.columns[feat1], size=12)
+    ax.set_ylabel(X.columns[feat2], size=12)
+    ax.legend(*scat.legend_elements(), loc="upper right", title="Diagnostic")
+
+# Create side-by-side plots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+
+plot_svm_comparison(clf_linear, "Linear SVM (Straight Boundary)", ax1)
+plot_svm_comparison(clf_rbf, "Non-Linear SVM (RBF Curved Boundary)", ax2)
+
+plt.tight_layout()
+plt.show()
+
+# 6. PRINT ACCURACIES
+print(f"Linear SVM Accuracy: {clf_linear.score(X_test_2d, y_test)*100:.2f}%")
+print(f"Non-Linear SVM Accuracy: {clf_rbf.score(X_test_2d, y_test)*100:.2f}%")
+
+///////////////////////
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. LOAD AND PREPROCESS DATA
+df = pd.read_csv(r'C:\Users\login01\Documents\MK\s1.csv').dropna()
+df.columns = df.columns.str.strip().str.replace(' ', '_')
+
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = df[col].astype('category').cat.codes
+
+# Target must be -1 and 1 for scratch SVM math
+X_full = df.drop('LUNG_CANCER', axis=1).values
+y = np.where(df['LUNG_CANCER'].values <= 0, -1, 1)
+
+# Manual Standardization
+X_full = (X_full - np.mean(X_full, axis=0)) / np.std(X_full, axis=0)
+
+# Pick 2 features for 2D Plot: GENDER (0) and AGE (1)
+feat1, feat2 = 0, 1
+X = X_full[:, [feat1, feat2]]
+
+# Split Data
+indices = np.arange(X.shape[0])
+np.random.shuffle(indices)
+split = int(0.7 * len(indices))
+X_train, X_test = X[indices[:split]], X[indices[split:]]
+y_train, y_test = y[indices[:split]], y[indices[split:]]
+
+# 2. SVM FROM SCRATCH CLASS
+class SVM_Scratch:
+    def __init__(self, kernel='linear', lr=0.01, lambda_p=0.01, iters=500, gamma=0.5):
+        self.kernel_type = kernel
+        self.lr = lr
+        self.lambda_p = lambda_p
+        self.iters = iters
+        self.gamma = gamma
+        self.alpha = None
+        self.b = 0
+
+    def _kernel(self, x1, x2):
+        if self.kernel_type == 'linear':
+            return np.dot(x1, x2)
+        return np.exp(-self.gamma * np.linalg.norm(x1 - x2)**2)
+
+    def fit(self, X, y):
+        self.X_train, self.y_train = X, y
+        n_samples = X.shape[0]
+        self.alpha = np.zeros(n_samples)
+        
+        # Precompute Kernel Matrix
+        K = np.array([[self._kernel(i, j) for j in X] for i in X])
+
+        for _ in range(self.iters):
+            for i in range(n_samples):
+                # Dual Form Prediction
+                prediction = np.sum(self.alpha * self.y_train * K[:, i]) + self.b
+                if y[i] * prediction < 1:
+                    self.alpha[i] += self.lr * (1 - y[i] * prediction)
+                    self.b += self.lr * y[i]
+                else:
+                    self.alpha[i] -= self.lr * self.lambda_p * self.alpha[i]
+
+    def project(self, X_new):
+        y_predict = []
+        for x in X_new:
+            s = np.sum([a * yt * self._kernel(xt, x) for a, yt, xt in zip(self.alpha, self.y_train, self.X_train)])
+            y_predict.append(s + self.b)
+        return np.array(y_predict)
+
+    def predict(self, X_new):
+        return np.sign(self.project(X_new))
+
+# 3. TRAIN MODELS
+linear_scratch = SVM_Scratch(kernel='linear')
+linear_scratch.fit(X_train, y_train)
+
+rbf_scratch = SVM_Scratch(kernel='rbf', gamma=0.5)
+rbf_scratch.fit(X_train, y_train)
+
+# 4. VISUALIZATION
+def plot_scratch_results(model, title, ax):
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 50), np.linspace(y_min, y_max, 50))
+    
+    Z = model.project(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    
+    ax.contourf(xx, yy, Z, levels=[-10, 0, 10], colors=['#e3f2fd', '#ffebee'], alpha=0.8)
+    ax.contour(xx, yy, Z, colors='black', levels=[-1, 0, 1], linestyles=['--', '-', '--'])
+    ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap='coolwarm', edgecolors='k')
+    ax.set_title(title)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+plot_scratch_results(linear_scratch, "Manual Linear SVM", ax1)
+plot_scratch_results(rbf_scratch, "Manual Non-Linear (RBF) SVM", ax2)
+plt.show()
+
+# 5. ACCURACY
+lin_acc = np.mean(linear_scratch.predict(X_test) == y_test)
+rbf_acc = np.mean(rbf_scratch.predict(X_test) == y_test)
+print(f"Linear Accuracy: {lin_acc*100:.2f}% | RBF Accuracy: {rbf_acc*100:.2f}%")
